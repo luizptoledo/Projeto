@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Pipeline
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-west-2
+          aws-region: us-east-1
 
   build-and-push:
     runs-on: ubuntu-latest
@@ -37,7 +37,7 @@ jobs:
           docker build -t populate ./populate
           docker tag populate:latest ${{ steps.login-ecr.outputs.registry }}/populate:latest
 
-      - name: Push Docker images
+      - name: Push Docker images to ECR
         run: |
           docker push ${{ steps.login-ecr.outputs.registry }}/backend:latest
           docker push ${{ steps.login-ecr.outputs.registry }}/populate:latest
@@ -49,15 +49,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v1
 
-      - name: Terraform Init
+      - name: Initialize Terraform
         run: |
           cd terraform
           terraform init -input=false
 
-      - name: Terraform Apply
+      - name: Apply Terraform configuration
         run: |
           cd terraform
           terraform apply -auto-approve
